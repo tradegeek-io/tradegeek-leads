@@ -1,0 +1,12 @@
+
+azure-functions==1.20.0
+pandas==2.2.2
+pydantic==2.8.2
+pydantic_core==2.20.1
+pytest==8.3.2
+pytest-asyncio==0.23.8
+requests==2.32.3
+fuzzywuzzy==0.18.0
+python-dotenv
+git+https://github.com/rahul-08-11/pyzohocrm.git
+Pillow
