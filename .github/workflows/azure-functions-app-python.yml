@@ -1,4 +1,4 @@
-name: Deploy Python project to Azure Function App
+name: Deploy Lead Ops Service to Azure Function App
 
 on:
   push:
@@ -62,9 +62,9 @@ jobs:
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
-          app-name: 'bubble-service-major' ##replace with your function name
+          app-name: 'tradegeek-leads' ##replace with your function name
           slot-name: 'Production'
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           scm-do-build-during-deployment: true
           enable-oryx-build: true
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_FCCB9754D975453B906388F9C6A8FAC7 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_LEADS }}
