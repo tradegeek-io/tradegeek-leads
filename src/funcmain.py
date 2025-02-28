@@ -56,6 +56,7 @@ async def generate_leads(vehicle_row, sold_database=None, avg_purchase_price_df=
                         "Vehicle_id": vehicle_id,
                         "Progress_Status": "To Be Contacted",
                         "buyer_id": buyer_id,
+                        "Dealer_Phone":account_info.get("Dealer_Phone",None)
                     }
                     data.append(lead_data)
         
