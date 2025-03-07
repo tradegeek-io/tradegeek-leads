@@ -6,7 +6,8 @@ from pyzohocrm import TokenManager, ZohoApi
 import os
 from dotenv import load_dotenv
 load_dotenv()
-
+import requests
+import phonenumbers
 TEMP_DIR = "/tmp/"
 
 TOKEN_INSTANCE =  TokenManager(
@@ -38,7 +39,7 @@ async def generate_leads(vehicle_row, sold_database=None, avg_purchase_price_df=
 
         data = []
         ## convert this into batch request
-        for index, row in recommendations_df.iloc[:20][::-1].iterrows():
+        for index, row in recommendations_df.iloc[:30][::-1].iterrows():
             try:
             
                 buyer_name = standardize_cname(row["Buyer"])
@@ -46,6 +47,12 @@ async def generate_leads(vehicle_row, sold_database=None, avg_purchase_price_df=
                 account_info = ZOHO_API.search_record(moduleName="Accounts",query= f"Account_Name:equals:{buyer_name}", token=access_token).json().get("data")[0]
                 logging.info(f"account_info : {account_info}")
                 buyer_id = account_info.get("id")
+
+                try:
+                    buyer_phone = format_phone_number(account_info.get("Dealer_Phone",None).split("ext")[0])
+                except Exception as e:
+                    logging.error(f"Error Occured While Formatting Phone Number {e}")
+                    buyer_phone = None
 
                 if buyer_id:
                     lead_data = {
@@ -56,8 +63,9 @@ async def generate_leads(vehicle_row, sold_database=None, avg_purchase_price_df=
                         "Vehicle_id": vehicle_id,
                         "Progress_Status": "To Be Contacted",
                         "buyer_id": buyer_id,
-                        "Dealer_Phone":account_info.get("Dealer_Phone",None)
+                        "Dealer_Phone":buyer_phone
                     }
+
                     data.append(lead_data)
         
             except Exception as e:
@@ -65,6 +73,30 @@ async def generate_leads(vehicle_row, sold_database=None, avg_purchase_price_df=
 
         payload = {"data": data}
         lead_attach_response = ZOHO_API.create_record(moduleName="Leads", data=payload, token=access_token)
+
+        for lead_crm_response, lead_data in zip(lead_attach_response.json().get("data"), data):
+            lead_record_id = lead_crm_response.get("details").get("id")
+
+            try:
+                number  = format_phone_number(lead_data.get("Dealer_Phone","").split("ext")[0])
+            except Exception as e:
+                number = ""
+
+            bubble_lead_body = {
+                "lead_score": lead_data.get("Lead_Score"),
+                "offer_amount":"",
+                "buyer_name": lead_data.get("Buyer_Text"),
+                "progres_status": lead_data.get("Progress_Status"),
+                "zoho_record_id":lead_record_id,
+                "zoho_buyer_id":lead_data.get("buyer_id"),
+                "zoho_vehicle_id":lead_data.get("Vehicle_id"),
+                "phone_number":number
+
+            }
+            logging.info(f"Bubble Lead Body : {bubble_lead_body}")
+            bubble_response = requests.post(url=os.getenv("BUBBLE_LEAD_API"), json=bubble_lead_body)
+            logging.info(f"Bubble Lead Response : {bubble_response.status_code}")
+
         logging.info(f"Lead Attach Response : {lead_attach_response.status_code}")
         if lead_attach_response.status_code == 201 or lead_attach_response.status_code == 200:
             return {"status": "success","code": lead_attach_response.status_code,"message": lead_attach_response.json()}

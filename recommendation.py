@@ -207,5 +207,13 @@ class BuyerRecommendation:
         leads['Score'] = np.select(conditions, choices, default=leads['Score'])
 
         logging.info(f"Length of leads updated: {len(leads)}")
+        # Define custom sorting order
+        score_order = {'Hot': 0, 'Warm': 1, 'Cold': 2}
+        leads['Score Order'] = leads['Score'].map(score_order)
+
+        # Sort by Score Order
+        leads = leads.sort_values(by='Score Order', ascending=True).drop(columns=['Score Order'])
+
+        logging.info(f"Length of leads updated: {len(leads)}")
 
         return leads
